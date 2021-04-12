@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { DataStore } from "@aws-amplify/datastore";
 import { Todo } from "./models";
 
@@ -8,25 +8,60 @@ const initialFormData = { name: "", description: "" };
 
 function App() {
   const [formData, setFormData] = useState({ ...initialFormData });
+  const [editFormData, setEditFormData] = useState({ ...initialFormData });
+  const [modalIsOpen, setModalIsOpen] = useState(false);
   const [toDos, setToDos] = useState([]);
+  const editID = useRef(null);
+
+  const queryToDos = async () => {
+    console.log("querying...");
+    const result = await DataStore.query(Todo);
+    setToDos([...result]);
+  };
+
+  const closeModal = () => {
+    setEditFormData({ ...initialFormData });
+    setModalIsOpen(false);
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm("are you sure you want to delete this record?")) {
       const modelToDelete = await DataStore.query(Todo, id);
       DataStore.delete(modelToDelete);
+      queryToDos();
     }
   };
 
-  const handleUpdate = async (id) => {
+  const openModal = async (id) => {
     const original = await DataStore.query(Todo, id);
-    // await Todo.copyOf(original, updated => {
-    //   console.log(updated.name, updated.description);
-    // });
+    editID.current = original;
+    setEditFormData({ name: original.name, description: original.description });
+    setModalIsOpen(true);
   };
 
   const onChange = (event) => {
     const { name, value } = event.currentTarget;
     setFormData({ ...formData, [name]: value });
+  };
+
+  const handleEditOnChange = (event) => {
+    const { name, value } = event.currentTarget;
+    setEditFormData({ ...editFormData, [name]: value });
+  };
+
+  const handleEditOnSubmit = async (event) => {
+    event.preventDefault();
+    const { name, description } = editFormData;
+    await DataStore.save(
+      Todo.copyOf(editID.current, (updated) => {
+        updated.name = name;
+        updated.description = description;
+      }),
+    );
+    closeModal();
+    editID.current = null;
+    setEditFormData({ ...initialFormData });
+    queryToDos();
   };
 
   const onSubmit = async (event) => {
@@ -39,15 +74,13 @@ function App() {
       }),
     );
     setFormData({ ...initialFormData });
+    queryToDos();
   };
 
   useEffect(() => {
-    const queryToDos = async () => {
-      const result = await DataStore.query(Todo);
-      setToDos([...result]);
-    };
     queryToDos();
-  }, [toDos]);
+    console.log("f ekt");
+  }, []);
 
   return (
     <div>
@@ -74,7 +107,7 @@ function App() {
         </thead>
         <tbody>
           {toDos.map(({ id, name, description }) => (
-            <tr>
+            <tr key={id}>
               <td>{name}</td>
               <td>{description}</td>
               <td>
@@ -83,7 +116,7 @@ function App() {
                 </button>
               </td>
               <td>
-                <button type="button" onClick={() => handleUpdate(id)}>
+                <button type="button" onClick={() => openModal(id)}>
                   <span class="material-icons">edit</span>
                 </button>
               </td>
@@ -91,6 +124,29 @@ function App() {
           ))}
         </tbody>
       </table>
+      <div
+        className="modal"
+        style={{ display: modalIsOpen ? "initial" : "none" }}
+      >
+        <div className="modalBody">
+          <form className="modalForm" onSubmit={handleEditOnSubmit}>
+            <input
+              name="name"
+              value={editFormData.name}
+              onChange={handleEditOnChange}
+            />
+            <input
+              name="description"
+              value={editFormData.description}
+              onChange={handleEditOnChange}
+            />
+            <button type="button" onClick={closeModal}>
+              Cancel
+            </button>
+            <button onClick={handleEditOnSubmit}>Update</button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
