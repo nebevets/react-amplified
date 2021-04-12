@@ -85,24 +85,30 @@ function App() {
   return (
     <div>
       <form onSubmit={onSubmit}>
-        <input name="name" value={formData.name} onChange={onChange} />
+        <label>Add a new item:</label>
         <input
+          placeholder="name"
+          name="name"
+          value={formData.name}
+          onChange={onChange}
+        />
+        <input
+          placeholder="description"
           name="description"
           value={formData.description}
           onChange={onChange}
         />
-        <button onClick={onSubmit}>
+        <button onClick={onSubmit} title="add new">
           <span class="material-icons">add</span>
         </button>
       </form>
-      <table>
+      <table className="dataTable">
         <caption>AWS Amplify To-Do List</caption>
         <thead>
           <tr>
-            <td>Name</td>
-            <td>Description</td>
-            <td>Delete</td>
-            <td>Update</td>
+            <th>Name</th>
+            <th>Description</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -111,12 +117,18 @@ function App() {
               <td>{name}</td>
               <td>{description}</td>
               <td>
-                <button type="button" onClick={() => handleDelete(id)}>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(id)}
+                  title="delete"
+                >
                   <span class="material-icons">delete</span>
                 </button>
-              </td>
-              <td>
-                <button type="button" onClick={() => openModal(id)}>
+                <button
+                  type="button"
+                  onClick={() => openModal(id)}
+                  title="edit"
+                >
                   <span class="material-icons">edit</span>
                 </button>
               </td>
@@ -143,7 +155,7 @@ function App() {
             <button type="button" onClick={closeModal}>
               Cancel
             </button>
-            <button onClick={handleEditOnSubmit}>Update</button>
+            <button>Update</button>
           </form>
         </div>
       </div>
